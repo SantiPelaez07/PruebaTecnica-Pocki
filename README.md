@@ -1,98 +1,179 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Pocki Assistant – Prueba Técnica Fullstack Junior
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Bot de WhatsApp que analiza mensajes de usuarios usando OpenAI, ejecuta herramientas personalizadas y responde con resultados procesados. Implementado con **NestJS** y **PostgreSQL**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Table of Contents
+1. [Instalación](#instalación)
+2. [Configuración](#configuración)
+3. [Endpoints](#endpoints)
+4. [Arquitectura](#arquitectura)
+5. [Decisiones Técnicas](#decisiones-técnicas)
+6. [Uso de OpenAI](#uso-de-openai)
+7. [Tools Implementadas](#tools-implementadas)
+8. [Pruebas y Ejecución](#pruebas-y-ejecución)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## 1.Instalación
+Clonar el repositorio:
 
 ```bash
-$ npm install
+git clone https://github.com/SantiPelaez07/PruebaTecnica-Pocki.git
+cd PruebaTecnica-Pocki
+npm install
 ```
 
-## Compile and run the project
+## 2.Configuración
+
+Crear el archivo `.env` en la raíz del proyecto. Este archivo contendrá variables de entorno y claves importantes que no deben ser públicas, como la **OPENAI_API_KEY**.
+
+- Reemplaza `sk-xxxx` con la API key que proporciona OpenAI desde su dashboard.  
+- Mantén `USE_OPENAI_MOCK=true` mientras no haya una key activa.  
+- Cuando agregues la key real, cambia `USE_OPENAI_MOCK` a `false`. **No elimines esta variable.**
+
+Ejemplo de `.env`:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+OPENAI_API_KEY=sk-xxxx
+USE_OPENAI_MOCK=true
 ```
 
-## Run tests
+Adicionalmente se debe crear la base de datos en el motor SQL de tu preferencia y asegurarse de que el puerto de comunicación esté abierto.  
+En este proyecto se utilizó **XAMPP** con MySQL. Para configurar la conexión, modifica los valores en `database.config.ts` según tu entorno:
 
+```ts
+host: 'localhost',
+port: 3306,
+username: 'root',
+password: '',
+```
+
+## 3.Endpoints
+
+### Crear mensaje
+- **Método:** POST 
+- **Ruta:** `http://localhost:3000/chat`  
+- **Descripción:** Crea un mensaje en la base de datos.  
+- **Request:** 
+```json
+{
+  "userPhone": "xxxxxxxxxx",
+  "question": "Quiero saber el precio del dolar"
+}
+```
+- **Response (ejemplo):**
+```json
+[
+  {
+    "id": 1,
+    "content": "Hola, quiero la TRM",
+    "createdAt": "2026-03-06T10:00:00.000Z",
+    "responses": [
+      {
+        "id": 1,
+        "content": "La TRM actual es $3.987,54"
+      }
+    ]
+  }
+]
+```
+
+### Listar mensaje por ID
+- **Método:** GET  
+- **Ruta:** `http://localhost:3000/chat/1`  
+- **Descripción:** Devuelve el mensaje registrado con el id correspondiente.  
+- **Request:** Requiere un parametro el cual será el ID como se evidencia en la URL.  
+- **Response (ejemplo):**
+```json
+[
+  {
+    "id": 1,
+    "content": "Hola, quiero la TRM",
+    "createdAt": "2026-03-06T10:00:00.000Z",
+    "responses": [
+      {
+        "id": 1,
+        "content": "La TRM actual es $3.987,54"
+      }
+    ]
+  }
+]
+```
+
+### Listar todos los mensajes
+- **Método:** GET  
+- **Ruta:** `http://localhost:3000/chat`  
+- **Descripción:** Devuelve todos los mensajes registrados en la base de datos.  
+- **Request:** No requiere body ni parámetros.  
+- **Response (ejemplo):**
+```json
+[
+  {
+    "id": 1,
+    "content": "Hola, quiero la TRM",
+    "createdAt": "2026-03-06T10:00:00.000Z",
+    "responses": [
+      {
+        "id": 1,
+        "content": "La TRM actual es $3.987,54"
+      }
+    ]
+  }
+]
+```
+
+## 4.Arquitectura
+
+**NestJS Modular:**
+- ChatModule → Servicios, controladores y DTOs.
+- OpenaiService → Conexión con OpenAI y gestión de prompts.
+- Tools → Funciones externas como DolarTool para TRM.
+
+DTOs: control de datos de entrada y salida.
+Services: lógica de negocio centralizada.
+Controllers: exponen endpoints HTTP.
+Repository: acceso a la base de datos con TypeORM.
+
+La arquitectura sigue clean code y separación de responsabilidades.
+
+
+## 5.Decisiones técnicas
+
+-Uso de NestJS por modularidad y escalabilidad.
+-Validaciones: DTOs y excepciones (BadRequestException, NotFoundException).
+-Fallback OpenAI: detección manual de intención cuando no hay créditos disponibles.
+-Queries optimizadas para evitar doble llamada a la base de datos.
+-Tools encapsuladas para facilitar futuras integraciones.
+
+## 6.Uso de OPENAI
+
+El servicio está implementado y registrado.
+Para activar IA:
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+Configurar OPENAI_API_KEY en .env.
+Poner USE_OPENAI_MOCK=false.
 ```
+Actualmente se usa validación manual de intención para continuar el flujo mientras no hay créditos.
 
-## Deployment
+## 7.Tool implementada
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- TRM Tool: obtiene la tasa de cambio del dólar en Colombia usando la API dolarapi.com.
+- Se ejecuta automáticamente cuando el usuario solicita la TRM.
+- Formatea la respuesta de manera legible y con moneda local.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 8.Pruebas y ejecución
 
+Levantar la aplicación en modo desarrollo:
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run start:dev
 ```
+-Enviar requests usando Postman o curl.
+-Validar respuestas de mensajes y TRM.
+-Activar OpenAI con API key y USE_OPENAI_MOCK=false para probar IA.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🎥 Demo
 
-## Resources
+[![Demo API](![Vídeo de muestra](image.png))](https://youtu.be/fOeLLnxDEuI)
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
