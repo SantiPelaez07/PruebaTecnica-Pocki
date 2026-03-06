@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from '../../domain/entities/Message.entity';
 import { Response } from '../../domain/entities/ResponseMessage.entity';
-import { CreateMessageDto } from '../dto/CreateMessageDto';
+import { CreateMessageDto } from '../dto/Request/CreateMessageDto';
+import { ChatResponseDto } from '../dto/Response/ChatResponseDto';
 import { getTRM } from '../../infrastructure/tools/Dolar.tool';
 import { OpenAI } from 'openai';
 
@@ -23,23 +28,35 @@ export class ChatService {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
 
-  async postMessage(dto: CreateMessageDto): Promise<Message> {
+  async postMessage(dto: CreateMessageDto): Promise<ChatResponseDto> {
     try {
       const message = CreateMessageDto.toEntity(dto);
 
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: dto.question }],
-      });
+      let toolUsed = 'ninguna';
 
-      message.toolUsed =
-        completion.choices[0].message?.content?.trim().toLowerCase() ||
-        'ninguna';
-      const tool = message.toolUsed;
+      if (process.env.USE_OPENAI_MOCK === 'true') {
+        if (
+          dto.question.toLowerCase().includes('dolar') ||
+          dto.question.toLowerCase().includes('trm')
+        ) {
+          toolUsed = 'dolar';
+        } else {
+          toolUsed = 'ninguna';
+        }
+      } else {
+        const completion = await this.openai.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: dto.question }],
+        });
+        toolUsed =
+          completion.choices[0].message?.content?.trim().toLowerCase() ||
+          'ninguna';
+      }
+      message.toolUsed = toolUsed;
 
       const response = new Response();
 
-      if (tool === 'dolar' || tool === 'trm') {
+      if (toolUsed === 'dolar' || toolUsed === 'trm') {
         response.answer = await getTRM();
       } else {
         response.answer = 'No se requiere herramienta para esta pregunta.';
@@ -52,7 +69,7 @@ export class ChatService {
       });
 
       savedMessage.responses = [savedResponse];
-      return savedMessage;
+      return ChatResponseDto.fromEntity(savedMessage);
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Error:', error.message);
@@ -63,11 +80,21 @@ export class ChatService {
     }
   }
 
-  async getMessageById(id: number): Promise<Message | null> {
-    return this.messageRepository.findOne({
+  async getMessageById(id: number): Promise<Message> {
+    if (id <= 0) {
+      throw new BadRequestException('ID inválido');
+    }
+
+    const message = await this.messageRepository.findOne({
       where: { id },
       relations: ['responses'],
     });
+
+    if (!message) {
+      throw new NotFoundException(`No existe un mensaje con id ${id}`);
+    }
+
+    return message;
   }
 
   async getAllMessages(): Promise<Message[]> {
