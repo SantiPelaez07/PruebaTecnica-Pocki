@@ -16,7 +16,6 @@ let Message = class Message {
     id;
     userPhone;
     question;
-    answer;
     toolUsed;
     createdAt;
     responses;
@@ -34,10 +33,6 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Message.prototype, "question", void 0);
-__decorate([
-    (0, typeorm_1.Column)(),
-    __metadata("design:type", String)
-], Message.prototype, "answer", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

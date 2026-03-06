@@ -18,9 +18,6 @@ export class Message {
   @Column()
   question!: string;
 
-  @Column()
-  answer!: string;
-
   @Column({ nullable: true })
   toolUsed!: string;
 
