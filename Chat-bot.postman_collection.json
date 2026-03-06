@@ -1,0 +1,54 @@
+{
+  "info": {
+    "_postman_id": "3a76e93c-0c2f-4d81-b995-3d1e5ce1897c",
+    "name": "Chat-bot",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "34451392"
+  },
+  "item": [
+    {
+      "name": "CrearMensaje",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/chat",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "chat"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GetMessages",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "GetMessageById",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    }
+  ]
+}
